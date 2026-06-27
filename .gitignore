@@ -1,0 +1,22 @@
+# 数据目录（太大，不提交）
+Hangzhou-mobility-data-set/
+*.zip
+*.wxdownload
+
+# 原始CSV数据
+record_*.csv
+
+# Python缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 模型文件（可重新训练）
+programme/models/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 系统文件
+.DS_Store
+Thumbs.db
