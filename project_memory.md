@@ -29,9 +29,11 @@
 - [x] 线路拓扑可视化（pic/metro_topology.png）
 - [x] B线数据预处理（data/b_line_*.csv）
 - [x] B线单日可视化（pic/01~07_*.png）
-- [ ] 特征工程
-- [ ] 模型训练与对比
-- [ ] 预测与提交
+- [x] 特征工程 (55维)
+- [x] 模型训练与对比 (线性7种 + 树3种)
+- [x] 预测结果可视化 (results_viz/)
+- [x] GitHub 仓库: https://github.com/de67328/py_proj_report_subway
+- [ ] 预测与提交（赛题格式）
 
 ## 技术方案
 

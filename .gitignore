@@ -11,8 +11,6 @@ __pycache__/
 *.pyc
 *.pyo
 
-# 模型文件（可重新训练）
-programme/models/
 
 # Jupyter
 .ipynb_checkpoints/
