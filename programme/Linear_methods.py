@@ -32,9 +32,11 @@ def _safe_fit_predict(model, X_train, y_train, X_valid, y_valid):
     return y_pred, elapsed
 
 
-def run_linear_models(X_train, y_train, X_valid, y_valid):
+def run_linear_models(X_train, y_train, X_valid, y_valid, model_dir=None):
     """运行所有线性模型，返回 (results, models_dict, preds_dict)"""
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    if model_dir is None:
+        model_dir = MODEL_DIR
+    os.makedirs(model_dir, exist_ok=True)
     results = []
     models_dict = {}   # name → model (for reloading)
     preds_dict = {}    # name → (pred_in, pred_out)
@@ -54,7 +56,7 @@ def run_linear_models(X_train, y_train, X_valid, y_valid):
                     'mae_avg': (mae_in + mae_out) / 2, 'time': t})
     models_dict[name] = model
     preds_dict[name] = (y_pred[:, 0], y_pred[:, 1])
-    joblib.dump(model, os.path.join(MODEL_DIR, f'{name}.pkl'))
+    joblib.dump(model, os.path.join(model_dir, f'{name}.pkl'))
     print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # ---- 2. Lasso (L1) ----
@@ -68,7 +70,7 @@ def run_linear_models(X_train, y_train, X_valid, y_valid):
                     'mae_avg': (mae_in + mae_out) / 2, 'time': t})
     models_dict[name] = model
     preds_dict[name] = (y_pred[:, 0], y_pred[:, 1])
-    joblib.dump(model, os.path.join(MODEL_DIR, f'{name}.pkl'))
+    joblib.dump(model, os.path.join(model_dir, f'{name}.pkl'))
     print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # ---- 3. ElasticNet ----
@@ -82,7 +84,7 @@ def run_linear_models(X_train, y_train, X_valid, y_valid):
                     'mae_avg': (mae_in + mae_out) / 2, 'time': t})
     models_dict[name] = model
     preds_dict[name] = (y_pred[:, 0], y_pred[:, 1])
-    joblib.dump(model, os.path.join(MODEL_DIR, f'{name}.pkl'))
+    joblib.dump(model, os.path.join(model_dir, f'{name}.pkl'))
     print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # ---- 4. PCA + Ridge (保存 PCA + Ridge 两个对象) ----
@@ -103,7 +105,7 @@ def run_linear_models(X_train, y_train, X_valid, y_valid):
                         'mae_avg': (mae_in + mae_out) / 2, 'time': t})
         models_dict[name] = {'pca': pca, 'ridge': model}
         preds_dict[name] = (y_pred[:, 0], y_pred[:, 1])
-        joblib.dump({'pca': pca, 'ridge': model}, os.path.join(MODEL_DIR, f'{name}.pkl'))
+        joblib.dump({'pca': pca, 'ridge': model}, os.path.join(model_dir, f'{name}.pkl'))
         print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # ---- 5. PLS ----
@@ -121,11 +123,11 @@ def run_linear_models(X_train, y_train, X_valid, y_valid):
                         'mae_avg': (mae_in + mae_out) / 2, 'time': t})
         models_dict[name] = model
         preds_dict[name] = (y_pred[:, 0], y_pred[:, 1])
-        joblib.dump(model, os.path.join(MODEL_DIR, f'{name}.pkl'))
+        joblib.dump(model, os.path.join(model_dir, f'{name}.pkl'))
         print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # 保存 scaler
-    joblib.dump(scaler, os.path.join(MODEL_DIR, 'scaler.pkl'))
-    print(f"  📁 模型已保存至 {MODEL_DIR}/")
+    joblib.dump(scaler, os.path.join(model_dir, 'scaler.pkl'))
+    print(f"  📁 模型已保存至 {model_dir}/")
 
     return results, models_dict, preds_dict

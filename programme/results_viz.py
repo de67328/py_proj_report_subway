@@ -281,6 +281,77 @@ def visualize_method_comparison(y_valid, linear_preds, tree_preds, time_slots, s
     print(f"✅ 对比图已保存至 {OUTPUT_DIR}/")
 
 
+def visualize_astgcn_comparison(y_valid, xgb_preds, astgcn_preds):
+    """
+    ASTGCN vs XGBoost 对比图
+    - 散点图: XGBoost预测 vs ASTGCN预测 vs 实际值
+    """
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    actual_in = y_valid['inNums'].values
+    actual_out = y_valid['outNums'].values
+
+    # ASTGCN 只预测了部分样本（滑动窗口），取交集
+    n_astgcn = len(astgcn_preds['pred_in'])
+    n_xgb = len(xgb_preds['pred_in'])
+    n_common = min(n_astgcn, n_xgb)
+
+    xgb_in = xgb_preds['pred_in'][:n_common]
+    xgb_out = xgb_preds['pred_out'][:n_common]
+    astgcn_in = astgcn_preds['pred_in'][:n_common]
+    astgcn_out = astgcn_preds['pred_out'][:n_common]
+    actual_in_c = actual_in[:n_common]
+    actual_out_c = actual_out[:n_common]
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 12))
+    fig.suptitle('ASTGCN vs XGBoost 预测对比', fontsize=15, fontweight='bold')
+
+    # 左上: XGBoost散点
+    mx = max(actual_in_c.max(), xgb_in.max()) * 1.05
+    ax1.scatter(actual_in_c, xgb_in, alpha=0.2, s=4, c='#4D96FF', edgecolors='none', label='XGBoost')
+    ax1.plot([0, mx], [0, mx], 'r--', alpha=0.5)
+    ax1.set_xlim(0, mx); ax1.set_ylim(0, mx)
+    ax1.set_xlabel('实际进站'); ax1.set_ylabel('预测进站')
+    ax1.set_title('XGBoost 进站', fontsize=12, fontweight='bold')
+    ax1.grid(True, alpha=0.3)
+
+    # 右上: ASTGCN散点
+    mx = max(actual_in_c.max(), astgcn_in.max()) * 1.05
+    ax2.scatter(actual_in_c, astgcn_in, alpha=0.2, s=4, c='#FF6B6B', edgecolors='none', label='ASTGCN')
+    ax2.plot([0, mx], [0, mx], 'r--', alpha=0.5)
+    ax2.set_xlim(0, mx); ax2.set_ylim(0, mx)
+    ax2.set_xlabel('实际进站'); ax2.set_ylabel('预测进站')
+    ax2.set_title('ASTGCN 进站', fontsize=12, fontweight='bold')
+    ax2.grid(True, alpha=0.3)
+
+    # 左下: 误差分布对比
+    err_xgb = xgb_in - actual_in_c
+    err_astgcn = astgcn_in - actual_in_c
+    ax3.hist(err_xgb, bins=60, alpha=0.5, color='#4D96FF', label=f'XGBoost (MAE={np.mean(np.abs(err_xgb)):.1f})')
+    ax3.hist(err_astgcn, bins=60, alpha=0.5, color='#FF6B6B', label=f'ASTGCN (MAE={np.mean(np.abs(err_astgcn)):.1f})')
+    ax3.axvline(0, color='black', linestyle='--', linewidth=1)
+    ax3.set_xlabel('预测 - 实际 (进站)')
+    ax3.set_ylabel('频次')
+    ax3.set_title('进站误差分布对比', fontsize=12, fontweight='bold')
+    ax3.legend(fontsize=9)
+
+    # 右下: 出站误差分布对比
+    err_xgb_o = xgb_out - actual_out_c
+    err_astgcn_o = astgcn_out - actual_out_c
+    ax4.hist(err_xgb_o, bins=60, alpha=0.5, color='#4D96FF', label=f'XGBoost (MAE={np.mean(np.abs(err_xgb_o)):.1f})')
+    ax4.hist(err_astgcn_o, bins=60, alpha=0.5, color='#FF6B6B', label=f'ASTGCN (MAE={np.mean(np.abs(err_astgcn_o)):.1f})')
+    ax4.axvline(0, color='black', linestyle='--', linewidth=1)
+    ax4.set_xlabel('预测 - 实际 (出站)')
+    ax4.set_ylabel('频次')
+    ax4.set_title('出站误差分布对比', fontsize=12, fontweight='bold')
+    ax4.legend(fontsize=9)
+
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUTPUT_DIR, '09_astgcn_vs_xgb.png'), dpi=150)
+    plt.close(fig)
+    print("  ASTGCN对比图 → 09_astgcn_vs_xgb.png")
+
+
 # ============================================================
 # 独立运行测试
 # ============================================================

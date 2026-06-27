@@ -15,7 +15,15 @@ import numpy as np
 from features import build_features, _load_data
 from Linear_methods import run_linear_models
 from Xgb_methods import run_tree_models
-from results_viz import visualize_results, visualize_method_comparison
+from results_viz import visualize_results, visualize_method_comparison, visualize_astgcn_comparison
+
+# ASTGCN 可选导入
+_ASTGCN_AVAIL = True
+try:
+    from astgcn_train import train_astgcn
+except ImportError as e:
+    _ASTGCN_AVAIL = False
+    print(f"  ⚠ ASTGCN 不可用: {e}")
 
 
 def main():
@@ -116,6 +124,35 @@ def main():
         y_valid, linear_preds, tree_preds,
         valid_slots2, valid_stations2
     )
+
+    # ============================================================
+    # Step 7: ASTGCN 图神经网络（可选）
+    # ============================================================
+    if _ASTGCN_AVAIL:
+        print("\n[Step 7] ASTGCN 图神经网络训练 ...")
+        astgcn_result, astgcn_preds = train_astgcn()
+        all_results.append(astgcn_result)
+
+        # 重新排序并打印最终排名
+        all_results.sort(key=lambda x: x['mae_avg'])
+        print("\n" + "=" * 70)
+        print("   最终模型排名 (含 ASTGCN)")
+        print("=" * 70)
+        print(f"{'模型':<22} {'MAE_in':>8} {'MAE_out':>8} {'MAE_avg':>8} {'耗时(s)':>8}")
+        print("-" * 58)
+
+        for r in all_results:
+            extra = ''
+            if 'params' in r:
+                extra = f"  ({r['params']:,} params)"
+            print(f"{r['name']:<22} {r['mae_in']:>8.2f} {r['mae_out']:>8.2f} "
+                  f"{r['mae_avg']:>8.2f} {r['time']:>8.1f}{extra}")
+
+        print("-" * 58)
+
+        # ASTGCN 对比图
+        print("\n[Step 8] ASTGCN vs XGBoost 对比可视化 ...")
+        visualize_astgcn_comparison(y_valid, best_preds, astgcn_preds)
 
     print("\n✅ 全部完成！")
 

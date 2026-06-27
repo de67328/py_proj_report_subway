@@ -110,6 +110,49 @@ def _add_station_dummies(df):
     return df
 
 
+def build_features_hybrid(df=None) -> tuple:
+    """
+    构建特征 + GCN 空间嵌入，返回同 build_features 格式
+    """
+    X_train, y_train, X_valid, y_valid, feature_cols = build_features(df=df)
+
+    # 加载 GCN 嵌入
+    EMBED_PATH = r"d:\作业\py展示\data\gcn_embeddings.csv"
+    if not os.path.exists(EMBED_PATH):
+        print("  ⚠ GCN 嵌入文件不存在，请先运行 gcn_embeddings.py")
+        return X_train, y_train, X_valid, y_valid, feature_cols
+
+    print(f"  加载 GCN 嵌入: {EMBED_PATH}")
+    df_emb = pd.read_csv(EMBED_PATH, parse_dates=['time_slot'])
+
+    # 合并: 按 (stationID, time_slot) left join
+    # 先重建有索引的原数据
+    df_full = _load_data()
+    df_full = df_full.sort_values(['stationID', 'time_slot']).reset_index(drop=True)
+    train_mask = df_full['date_str'] <= TRAIN_END
+
+    # 为训练集和验证集分别合并嵌入
+    train_idx = df_full.loc[train_mask, ['stationID', 'time_slot']].copy()
+    valid_idx = df_full.loc[~train_mask, ['stationID', 'time_slot']].copy()
+
+    train_merged = train_idx.merge(df_emb, on=['stationID', 'time_slot'], how='left')
+    valid_merged = valid_idx.merge(df_emb, on=['stationID', 'time_slot'], how='left')
+
+    emb_cols = [c for c in df_emb.columns if c.startswith('gcn_emb_')]
+    train_emb = train_merged[emb_cols].fillna(0).values
+    valid_emb = valid_merged[emb_cols].fillna(0).values
+
+    # 拼接到 X
+    X_train_new = np.hstack([X_train.values, train_emb])
+    X_valid_new = np.hstack([X_valid.values, valid_emb])
+
+    new_feature_cols = feature_cols + emb_cols
+    print(f"  混合特征完成: X_train={X_train_new.shape}, X_valid={X_valid_new.shape}")
+    print(f"  新增 GCN 嵌入维度: {len(emb_cols)}")
+
+    return X_train_new, y_train, X_valid_new, y_valid, new_feature_cols
+
+
 # ============================================================
 # 独立运行测试
 # ============================================================

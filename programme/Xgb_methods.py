@@ -32,9 +32,11 @@ except ImportError:
     print("  ⚠ lightgbm 未安装，跳过 LightGBM")
 
 
-def run_tree_models(X_train, y_train, X_valid, y_valid):
+def run_tree_models(X_train, y_train, X_valid, y_valid, model_dir=None):
     """运行所有树模型，返回 (results, models_dict, preds_dict, best_preds)"""
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    if model_dir is None:
+        model_dir = MODEL_DIR
+    os.makedirs(model_dir, exist_ok=True)
     results = []
     models_dict = {}   # name → (model_in, model_out)
     preds_dict = {}    # name → (pred_in, pred_out)
@@ -70,8 +72,8 @@ def run_tree_models(X_train, y_train, X_valid, y_valid):
         preds_dict[name] = (pred_in, pred_out)
         best_preds = {'pred_in': pred_in, 'pred_out': pred_out}
         # 保存
-        joblib.dump(model_in, os.path.join(MODEL_DIR, f'{name}_in.pkl'))
-        joblib.dump(model_out, os.path.join(MODEL_DIR, f'{name}_out.pkl'))
+        joblib.dump(model_in, os.path.join(model_dir, f'{name}_in.pkl'))
+        joblib.dump(model_out, os.path.join(model_dir, f'{name}_out.pkl'))
         print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # ---- 2. LightGBM ----
@@ -102,8 +104,8 @@ def run_tree_models(X_train, y_train, X_valid, y_valid):
                         'mae_avg': (mae_in + mae_out) / 2, 'time': t})
         models_dict[name] = (model_in, model_out)
         preds_dict[name] = (pred_in, pred_out)
-        joblib.dump(model_in, os.path.join(MODEL_DIR, f'{name}_in.pkl'))
-        joblib.dump(model_out, os.path.join(MODEL_DIR, f'{name}_out.pkl'))
+        joblib.dump(model_in, os.path.join(model_dir, f'{name}_in.pkl'))
+        joblib.dump(model_out, os.path.join(model_dir, f'{name}_out.pkl'))
         print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
     # ---- 3. GBDT (sklearn) ----
@@ -111,14 +113,14 @@ def run_tree_models(X_train, y_train, X_valid, y_valid):
     print(f"  [树] {name} ...", end=' ', flush=True)
     t0 = time.time()
     model_in = GradientBoostingRegressor(
-        n_estimators=200, max_depth=6, learning_rate=0.1,
+        n_estimators=100, max_depth=5, learning_rate=0.1,
         subsample=0.8, random_state=42
     )
     model_in.fit(X_train, y_train['inNums'])
     pred_in = np.maximum(model_in.predict(X_valid), 0)
 
     model_out = GradientBoostingRegressor(
-        n_estimators=200, max_depth=6, learning_rate=0.1,
+        n_estimators=100, max_depth=5, learning_rate=0.1,
         subsample=0.8, random_state=42
     )
     model_out.fit(X_train, y_train['outNums'])
@@ -131,9 +133,9 @@ def run_tree_models(X_train, y_train, X_valid, y_valid):
                     'mae_avg': (mae_in + mae_out) / 2, 'time': t})
     models_dict[name] = (model_in, model_out)
     preds_dict[name] = (pred_in, pred_out)
-    joblib.dump(model_in, os.path.join(MODEL_DIR, f'{name}_in.pkl'))
-    joblib.dump(model_out, os.path.join(MODEL_DIR, f'{name}_out.pkl'))
+    joblib.dump(model_in, os.path.join(model_dir, f'{name}_in.pkl'))
+    joblib.dump(model_out, os.path.join(model_dir, f'{name}_out.pkl'))
     print(f"MAE={mae_in:.2f}/{mae_out:.2f} ✓")
 
-    print(f"  📁 模型已保存至 {MODEL_DIR}/")
+    print(f"  📁 模型已保存至 {model_dir}/")
     return results, models_dict, preds_dict, best_preds
